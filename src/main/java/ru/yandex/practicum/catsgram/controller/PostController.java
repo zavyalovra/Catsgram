@@ -1,5 +1,6 @@
 package ru.yandex.practicum.catsgram.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.catsgram.model.Post;
 import ru.yandex.practicum.catsgram.service.PostService;
@@ -30,11 +31,12 @@ public class PostController {
     }
 
     @GetMapping("/{postId}")
-    public Optional<Post> findPostById(@PathVariable Long postId) {
-        return postService.findPostById(postId);
+    public Optional<Post> findById(@PathVariable Long postId) {
+        return postService.findById(postId);
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Post create(@RequestBody Post post) {
         return postService.create(post);
     }

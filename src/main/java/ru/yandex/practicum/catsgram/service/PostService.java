@@ -43,7 +43,7 @@ public class PostService {
                 .toList();
     }
 
-    public Optional<Post> findPostById(Long id) {
+    public Optional<Post> findById(Long id) {
         return Optional.ofNullable(posts.get(id));
     }
 
