@@ -6,9 +6,7 @@ import ru.yandex.practicum.catsgram.exception.NotFoundException;
 import ru.yandex.practicum.catsgram.model.Post;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class PostService {
@@ -19,8 +17,34 @@ public class PostService {
         this.userService = userService;
     }
 
-    public Collection<Post> findAll() {
-        return posts.values();
+    public Collection<Post> findAll(int from, int size, SortOrder sort) {
+        if (size <= 0) {
+            throw new ConditionsNotMetException("size должен быть больше 0");
+        }
+
+        if (from < 0) {
+            throw new ConditionsNotMetException("from не может быть отрицательным");
+        }
+
+        if (sort == null) {
+            throw new ConditionsNotMetException("Неизвестный параметр сортировки");
+        }
+
+        Comparator<Post> comparator = Comparator.comparing(Post::getPostDate);
+
+        if (sort == SortOrder.DESCENDING) {
+            comparator = comparator.reversed();
+        }
+
+        return posts.values().stream()
+                .sorted(comparator)
+                .skip(from)
+                .limit(size)
+                .toList();
+    }
+
+    public Optional<Post> findPostById(Long id) {
+        return Optional.ofNullable(posts.get(id));
     }
 
     public Post create(Post post) {
@@ -60,5 +84,22 @@ public class PostService {
                 .max()
                 .orElse(0);
         return ++currentMaxId;
+    }
+
+    public enum SortOrder {
+        ASCENDING, DESCENDING;
+
+        // Преобразует строку в элемент перечисления
+        public static SortOrder from(String order) {
+            switch (order.toLowerCase()) {
+                case "ascending":
+                case "asc":
+                    return ASCENDING;
+                case "descending":
+                case "desc":
+                    return DESCENDING;
+                default: return null;
+            }
+        }
     }
 }
