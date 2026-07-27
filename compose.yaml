@@ -1,30 +1,42 @@
-# описания сервисов (контейнеров), которые должны быть развёрнуты
 services:
-  # описание контейнера db
-  db: # имя сервиса
-    # образ, из которого должен быть запущен контейнер
+  db:
     image: postgres:16.1
-    # имя, которое нужно присвоить контейнеру
     container_name: postgres
-    # публикуемые порты
     ports:
       - "5432:5432"
-    # настройки монтирования volume
     volumes:
       - ./volumes/postgres:/var/lib/postgresql/data/
-    # переменные окружения
     environment:
       - POSTGRES_DB=catsgram
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=12345
-    # описание способа проверки, что контейнер в рабочем состоянии
     healthcheck:
-      # указываем, какую команду выполнить внутри контейнера для проверки его статуса
-      # в этом примере вызывается утилита pg_isready, входящая в состав PostgreSQL
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
-      # через какое время после запуска начинать проверку
       timeout: 5s
-      # интервал повторов проверки
       interval: 5s
-      # количество попыток
       retries: 10
+
+  db-init:
+    image: postgres:16.1
+    container_name: db-init
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./docs/sql:/sql:ro
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        echo "Creating database schema..."
+        psql postgresql://dbuser:12345@db:5432/catsgram \
+          -v ON_ERROR_STOP=1 \
+          -f /sql/catsgram_schema.sql
+        
+        echo "Loading test data..."
+        psql postgresql://dbuser:12345@db:5432/catsgram \
+          -v ON_ERROR_STOP=1 \
+          -f /sql/catsgram_inserts.sql
+        
+        echo "Database initialization completed."
